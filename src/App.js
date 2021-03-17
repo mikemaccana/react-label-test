@@ -4,13 +4,8 @@ import debounce from "lodash.debounce"
 
 const log = console.log.bind(console);
 
-function getRandomNumber(min, max) {
-  return Math.random() * (max - min) + min;
-}
-
 export default function App() {
   const round = Math.round;
-  const HEIGHT = 22
 
   let [labelTopOffset, setLabelTopOffset] = useState(0);
   let [labelLeftOffset, setLabelLeftOffset] = useState(0);
@@ -18,6 +13,8 @@ export default function App() {
 
   log(`Running labelling test`);
 
+  // As label calculations use the window properties, we'll need to re-render 
+  // when the window resizes
   // See https://www.pluralsight.com/guides/re-render-react-component-on-window-resize
   const [dimensions, setDimensions] = React.useState({ 
     height: window.innerHeight,
@@ -29,7 +26,7 @@ export default function App() {
         height: window.innerHeight,
         width: window.innerWidth
       })
-    }, 100)
+    }, 50)
     window.addEventListener('resize', debouncedHandleResize)
 
     return _ => {
@@ -37,26 +34,36 @@ export default function App() {
     }
   })
 
+  // Return coordinates that can be used to absolutely position 
+  // a label inside a 'relative' positioned parent
+  function getLabelCoordinates(spanElement, window){
 
+    // rects are relative to viewport
+    // See https://developer.mozilla.org/en-US/docs/Web/API/Element/getClientRects
+    const rects = spanElement.getClientRects();
+    const lastRect = rects[rects.length - 1];
+
+    const positionedAncestor = spanElement.offsetParent
+    const positionedAncestorRect = positionedAncestor.getBoundingClientRect();
+
+    const top =  round(lastRect.bottom - positionedAncestorRect.top - window.scrollY)
+    const left = round(lastRect.left - positionedAncestorRect.left - window.scrollX)
+    const lastRectWidth = round(lastRect.width)
+
+    return {
+      top,
+      left,
+      lastRectWidth 
+    }
+  }
 
   useEffect(() => {
-    const article = document.querySelector("article");
-    const articleRect = article.getBoundingClientRect();
-    log('articleRect', articleRect)
-
-
     const highlighted = document.querySelector(".highlighted");
-    const rects = highlighted.getClientRects();
+    const labelCoordinates = getLabelCoordinates(highlighted, window)
 
-    // lastRect is RELATIVE TO VIEWPORT
-    // See https://developer.mozilla.org/en-US/docs/Web/API/Element/getClientRects
-    const lastRectInSpanRelativeToViewport = rects[rects.length - 1];
-    log(`lastRect`, lastRectInSpanRelativeToViewport);
-
-    setLabelTopOffset(round(lastRectInSpanRelativeToViewport.bottom - articleRect.top - window.scrollY));
-    setLabelLeftOffset(round(lastRectInSpanRelativeToViewport.left - articleRect.left - window.scrollX));
-    
-    setLastRectWidth(round(lastRectInSpanRelativeToViewport.width));
+    setLabelTopOffset(labelCoordinates.top);
+    setLabelLeftOffset(labelCoordinates.left);
+    setLastRectWidth(labelCoordinates.lastRectWidth);
   });
 
   return (
@@ -148,13 +155,13 @@ export default function App() {
             display: "block",
             zIndex: 10,
 
+            // 
             top: `${labelTopOffset}px`,
             left: `${labelLeftOffset + lastRectWidth}px`,
-
             transform: 'translateX(-100%)',
 
-            height: `${HEIGHT}px`,
-            labelWidth: `50px`,
+            height: `22px`,
+            width: `50px`,
 
             color: 'white',
             textTransform: 'uppercase',
