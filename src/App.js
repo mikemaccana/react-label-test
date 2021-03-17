@@ -1,19 +1,43 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import "./styles.css";
+import debounce from "lodash.debounce"
 
 const log = console.log.bind(console);
+
+function getRandomNumber(min, max) {
+  return Math.random() * (max - min) + min;
+}
 
 export default function App() {
   const round = Math.round;
   const HEIGHT = 22
 
-  let [topOffset, setTopOffset] = useState(0);
-  let [rightOffset, setRightOffset] = useState(0);
-  let [bottomOffset, setBottomOffset] = useState(0);
-  let [leftOffset, setLeftOffset] = useState(0);
+  let [labelTopOffset, setLabelTopOffset] = useState(0);
+  let [labelLeftOffset, setLabelLeftOffset] = useState(0);
   let [width, setWidth] = useState(0);
 
-  log(`HELLO WORLD`);
+  log(`Running labelling test`);
+
+  // See https://www.pluralsight.com/guides/re-render-react-component-on-window-resize
+  const [dimensions, setDimensions] = React.useState({ 
+    height: window.innerHeight,
+    width: window.innerWidth
+  })
+  React.useEffect(() => {
+    const debouncedHandleResize = debounce(function handleResize() {
+      setDimensions({
+        height: window.innerHeight,
+        width: window.innerWidth
+      })
+    }, 100)
+    window.addEventListener('resize', debouncedHandleResize)
+
+    return _ => {
+      window.removeEventListener('resize', debouncedHandleResize)
+    }
+  })
+
+
 
   useEffect(() => {
     const article = document.querySelector("article");
@@ -23,24 +47,29 @@ export default function App() {
 
     const highlighted = document.querySelector(".highlighted");
     const rects = highlighted.getClientRects();
-    const lastRect = rects[rects.length - 1];
-    log(`lastRect`, lastRect);
 
-    setTopOffset(round(lastRect.bottom - articleRect.top));
-    setLeftOffset(round(lastRect.left - articleRect.left));
+    // lastRect is RELATIVE TO VIEWPORT
+    // See https://developer.mozilla.org/en-US/docs/Web/API/Element/getClientRects
+    const lastRectInSpanRelativeToViewport = rects[rects.length - 1];
+    log(`lastRect`, lastRectInSpanRelativeToViewport);
 
+    setLabelTopOffset(round(lastRectInSpanRelativeToViewport.bottom - articleRect.top - window.scrollY));
+    setLabelLeftOffset(round(lastRectInSpanRelativeToViewport.left - articleRect.left - window.scrollX));
     
-    setWidth(round(lastRect.width));
+    setWidth(round(lastRectInSpanRelativeToViewport.width));
   });
 
   return (
     <div className="App">
       <article
         style={{
-          maxWidth: "300px",
-          position: "relative"
+          width: '100%',
+          position: "relative",
+          transition: 'all 200ms'
         }}
       >
+        <h1>Resize the window and ensure the label stays in place</h1>
+        <p>Rendered at {dimensions.width} x {dimensions.height}</p>
         <span>
           Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
           eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad
@@ -118,14 +147,18 @@ export default function App() {
             position: "absolute",
             display: "block",
             zIndex: 10,
-            opacity: 0.5,
 
-            top: `${topOffset}px`,
-            left: `${leftOffset}px`,
+            top: `${labelTopOffset}px`,
+            left: `${labelLeftOffset + width}px`,
+
+            transform: 'translateX(-100%)',
 
             height: `${HEIGHT}px`,
-            width: `${width}px`,
+            width: `50px`,
 
+            color: 'white',
+            textTransform: 'uppercase',
+            fontWeight: 400,
             backgroundColor: "rebeccapurple"
           }}
         >
