@@ -14,7 +14,7 @@ export default function App() {
 
   let [labelTopOffset, setLabelTopOffset] = useState(0);
   let [labelLeftOffset, setLabelLeftOffset] = useState(0);
-  let [width, setWidth] = useState(0);
+  let [lastRectWidth, setLastRectWidth] = useState(0);
 
   log(`Running labelling test`);
 
@@ -56,7 +56,7 @@ export default function App() {
     setLabelTopOffset(round(lastRectInSpanRelativeToViewport.bottom - articleRect.top - window.scrollY));
     setLabelLeftOffset(round(lastRectInSpanRelativeToViewport.left - articleRect.left - window.scrollX));
     
-    setWidth(round(lastRectInSpanRelativeToViewport.width));
+    setLastRectWidth(round(lastRectInSpanRelativeToViewport.width));
   });
 
   return (
@@ -64,12 +64,12 @@ export default function App() {
       <article
         style={{
           width: '100%',
+          padding: '36px',
           position: "relative",
           transition: 'all 200ms'
         }}
       >
         <h1>Resize the window and ensure the label stays in place</h1>
-        <p>Rendered at {dimensions.width} x {dimensions.height}</p>
         <span>
           Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
           eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad
@@ -149,12 +149,12 @@ export default function App() {
             zIndex: 10,
 
             top: `${labelTopOffset}px`,
-            left: `${labelLeftOffset + width}px`,
+            left: `${labelLeftOffset + lastRectWidth}px`,
 
             transform: 'translateX(-100%)',
 
             height: `${HEIGHT}px`,
-            width: `50px`,
+            labelWidth: `50px`,
 
             color: 'white',
             textTransform: 'uppercase',
